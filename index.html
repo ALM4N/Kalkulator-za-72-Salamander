@@ -241,7 +241,7 @@ const calcAll=()=>wins.map((w,i)=>calc(w,i+1));
 
 // ---------- sketch ----------
 function scene(c){
-  const P=c.P,{W,H,vs,hs}=c.s,fs=Math.max(W,H)/46,lw=Math.max(W,H)/1000,ops=[];
+  const P=c.P,{W,H,vs,hs}=c.s,fs=Math.max(W,H)/34,lw=Math.max(W,H)/1000,ops=[];
   const INK="#24313d",EDGE="#8a98a5",PROF="#eef1f4",SASH="#e1e7ed",GL="#d4ebf8",PN="#dcc9a6",MU="#5b6b7a";
   const R=(x,y,w,h,fill,st,sw,dash)=>ops.push({k:"r",x,y,w,h,fill,st:st===undefined?INK:st,sw:sw||lw,dash});
   const L=(x1,y1,x2,y2,st,sw,dash)=>ops.push({k:"l",x1,y1,x2,y2,st:st||INK,sw:sw||lw,dash});
@@ -276,7 +276,7 @@ function scene(c){
   // labels
   c.panes.forEach(p=>{
     const lab=[p.sash?`K${p.idx}${p.role?" "+p.role:""}  ${f1(p.fw)}×${f1(p.fh)}`:`P${p.idx} fiksno`,`${p.ce.fill==="panel"?"panel":"staklo"}  ${f1(p.gw)}×${f1(p.gh)}`];
-    const mx=Math.max(...lab.map(s=>s.length)),sz=Math.max(fs*.38,Math.min(fs*.82,p.vw*.9/(mx*.56))),cx=p.vx+p.vw/2,cy=p.vy+p.vh*.84-sz*.2,bw=Math.min(p.vw*.94,mx*sz*.57+sz);
+    const mx=Math.max(...lab.map(s=>s.length)),sz=Math.max(fs*.38,Math.min(fs*1.1,p.vw*.9/(mx*.56))),cx=p.vx+p.vw/2,cy=p.vy+p.vh*.84-sz*.2,bw=Math.min(p.vw*.94,mx*sz*.57+sz);
     R(cx-bw/2,cy-sz*1.05,bw,sz*2.55,"#ffffff",INK,lw*.6);
     lab.forEach((l,i)=>T(cx,cy+i*sz*1.2,l,sz,{bold:i===0}))});
   T(W/2,P.fW/2+fs*.28,`ŠTOK ${f1(W+P.weld)}`,fs*.75,{fill:MU});
