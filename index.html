@@ -42,7 +42,7 @@ details summary{cursor:pointer;font-weight:600;color:var(--ac)}
 <body>
 <main>
 <h1>Kalkulator sečenja prozora</h1>
-<div class="sub">PVC sistem Salamander greenEvolution (MD) · štok 760008 · krilo 761003 · T-prečka 762008 · štulp 766002/4/6</div>
+<div class="sub" id="sub"></div>
 
 <div class="card">
 <h2>Prozori u poslu</h2>
@@ -53,10 +53,11 @@ details summary{cursor:pointer;font-weight:600;color:var(--ac)}
 <div class="card">
 <h2>1. Dimenzije i vid prozora</h2>
 <div class="grid">
+<div style="grid-column:1/-1"><label>Sistem profila</label><select id="sys"><option value="green">Salamander greenEvolution – štok 760008</option><option value="pro4">Salamander proEvolution MD – štok 720004</option><option value="pro3">Salamander proEvolution AD – štok 720003</option><option value="pro23">Salamander proEvolution AD 85 – štok 720023</option><option value="blu82">Salamander bluEvolution 82 – štok HO9020</option></select></div>
 <div><label>Oznaka prozora</label><input id="nm"></div>
 <div><label>Količina (kom.)</label><input id="kom" type="number" inputmode="numeric" min="1" value="1"></div>
-<div><label>Širina Š (mm)</label><input id="W" type="number" inputmode="numeric"></div>
-<div><label>Visina V (mm)</label><input id="H" type="number" inputmode="numeric"></div>
+<div><label>Širina Š (cm)</label><input id="W" type="number" inputmode="decimal" step="0.1"></div>
+<div><label>Visina V (cm)</label><input id="H" type="number" inputmode="decimal" step="0.1"></div>
 <div><label>Vid prozora</label><select id="vid">
 <option value="fix">Fiksni</option><option value="one">Jednokrilni</option>
 <option value="two">Dvokrilni sa T-prečkom</option><option value="twoS">Dvokrilni sa štulpom</option>
@@ -67,11 +68,11 @@ details summary{cursor:pointer;font-weight:600;color:var(--ac)}
 <div><label>Prvo se otvara (aktivno krilo)</label><select id="first"><option value="L">Levo (desno je pomoćno)</option><option value="R">Desno (levo je pomoćno)</option></select></div>
 <div><label>Ispuna</label><select id="fill"><option value="glass">Staklo</option><option value="panel">Panel</option></select></div>
 <div><label>Staklo / panel</label><select id="gl"></select></div>
-<div><label>Profil štulpa</label><select id="st"><option value="766002">766002 (vidno 51)</option><option value="766004">766004 (vidno 70)</option><option value="766006">766006 (vidno 70)</option></select></div>
+<div><label>Profil štulpa</label><select id="st"></select></div>
 </div>
 <div class="grid" style="margin-top:10px">
-<div><label>Vertikalne T-prečke – osa od leve ivice (mm, zarez)</label><input id="vp"></div>
-<div><label>Horizontalne T-prečke – osa od gornje ivice (mm, zarez)</label><input id="hp"></div>
+<div><label>Vertikalne T-prečke – osa od leve ivice (cm, razdvoji sa ;)</label><input id="vp"></div>
+<div><label>Horizontalne T-prečke – osa od gornje ivice (cm, razdvoji sa ;)</label><input id="hp"></div>
 </div>
 </div>
 
@@ -82,9 +83,9 @@ details summary{cursor:pointer;font-weight:600;color:var(--ac)}
 </div>
 
 <div class="card">
-<details><summary>Parametri sistema (mm) – važe za sve prozore</summary>
+<details><summary>Parametri sistema (cm) – za izabrani sistem</summary>
 <div id="params" class="grid" style="margin-top:10px"></div>
-<div class="note">Iz kataloga: štok 70, krilo 80, oslonac stakla 54,5 / 56, T-prečka 90, dodatak varenja +3, širina krila uz štulp (RAM/2 − 31 za 766002, − 41 za 766004/766006) i dužina štulpa (FAM − 92). Radne pretpostavke: skraćenje ojačanja, dodatak lajsne, dužina T-prečki i oslonac stakla uz štulp – uskladi sa svojom proizvodnjom.</div>
+<div class="note">Sve mere su u cm (iz kataloga preračunato iz mm: npr. štok 7, krilo 8 ili 7,5, T-prečka 9 ili 9,4). Širina krila uz štulp je RAM/2 − 3,1 cm (766002) odnosno − 4,1 cm (766004, 766006, 726003, 726004), a dužina štulpa je FAM − 9,2 cm. Za bluEvolution 82 (HO9810): širina krila uz štulp je RAM/2 − 3,3 cm, a štulp je FAM − 8,4 cm. Debljine stakla ostaju u mm. Radne pretpostavke: skraćenje ojačanja, dodatak lajsne, dužina T-prečki i oslonac stakla uz štulp – uskladi ih sa svojom proizvodnjom.</div>
 </details>
 </div>
 
@@ -108,25 +109,37 @@ details summary{cursor:pointer;font-weight:600;color:var(--ac)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const f1=n=>{const r=Math.round(n*10)/10;return Number.isInteger(r)?String(r):r.toFixed(1).replace(".",",")};
+const f1=n=>{const r=Math.round(n*10)/100;return String(r).replace(".",",")};
 const TYPES={fix:"Fiksno",tl:"Okretno – šarke levo",tr:"Okretno – šarke desno",ttl:"Okretno-nagibno – šarke levo",ttr:"Okretno-nagibno – šarke desno",tilt:"Nagibno",slide:"Klizno",stulp:"Dvokrilno sa štulpom (ok.-nag.)"};
 const VIDS={fix:"Fiksni",one:"Jednokrilni",two:"Dvokrilni (T)",twoS:"Dvokrilni (štulp)",three:"Trokrilni (T,T)",threeS:"Trokrilni krilo|T|štulp",threeS2:"Trokrilni štulp|T|krilo",slide:"Klizni"};
 const GL={24:["Dvoslojno 24 mm","413313"],28:["Dvoslojno 28 mm","413311"],36:["Troslojno 36 mm","413307"],40:["Troslojno 40 mm","413305"],44:["Troslojno 44 mm","413303"]};
-const ST={"766002":{d:14,vis:51,fl:62,cap:"467009"},"766004":{d:-6,vis:70,fl:61,cap:"467016"},"766006":{d:-6,vis:70,fl:61,cap:"467022"}};
-const PARAMS=[["fW","Štok – vidna širina",70],["fFl","Štok – oslonac stakla i T od spoljne ivice",54.5],["weld","Dodatak za varenje po profilu",3],["sW","Krilo – širina profila",80],["sOff","Krilo – spoljna ivica od ivice štoka",38],["sFl","Krilo – oslonac stakla od spoljne ivice",56],["mW","T-prečka – vidna širina",90],["mFl","T-prečka – oslonac stakla od ose",29.5],["bead","Lajsna – dodatak na meru stakla",6],["stEnd","Ojačanje štoka/krila – skraćenje po kraju",50],["stEndM","Ojačanje T-prečke/štulpa – skraćenje po kraju",10],["bar","Dužina PVC šipke",6500],["barSt","Dužina čelične šipke",6000],["kerf","Širina reza",4]];
-const P={};PARAMS.forEach(([k,,v])=>P[k]=v);
+const ST={"766002":{d:14,vis:51,fl:62,cap:"467009"},"766004":{d:-6,vis:70,fl:61,cap:"467016"},"766006":{d:-6,vis:70,fl:61,cap:"467022"},"726004":{d:-6,vis:70,fl:61,cap:"427014/427016"},"726003":{d:-6,vis:70,fl:61,cap:"427014"},"HO9810":{d:10,vis:60,fl:63,cap:"ZS9811",h:84}};
+const PARAMS=[["fW","Štok – vidna širina"],["fFl","Štok – oslonac stakla i T od spoljne ivice"],["weld","Dodatak za varenje po profilu"],["sW","Krilo – širina profila"],["sOff","Krilo – spoljna ivica od ivice štoka"],["sFl","Krilo – oslonac stakla od spoljne ivice"],["mW","T-prečka – vidna širina"],["mFl","T-prečka – oslonac stakla od ose"],["bead","Lajsna – dodatak na meru stakla"],["stEnd","Ojačanje štoka/krila – skraćenje po kraju"],["stEndM","Ojačanje T-prečke/štulpa – skraćenje po kraju"],["bar","Dužina PVC šipke (svi sistemi)"],["barSt","Dužina čelične šipke (svi sistemi)"],["kerf","Širina reza (svi sistemi)"]];
+const DEF={weld:3,bead:6,stEnd:50,stEndM:10};
+const G={bar:6500,barSt:6000,kerf:4};
+const PRESETS={
+ green:{label:"greenEvolution – štok 760008, krilo 761003, T-prečka 762008",short:"greenEvolution",frame:"760008",sash:"761003",mull:"762008",fW:70,fFl:54.5,sOff:38,sW:80,sFl:56,mW:90,mFl:29.5,rf:"",rs:"465001/465006/465026",rm:"465007",rst:"proveri artikal",bead:"",beadNote:null,stulps:["766002","766004","766006"]},
+ pro4:{label:"proEvolution MD – štok 720004 (70), krilo 721005/721001 (75), T-prečka 722006 (94)",short:"proEvolution MD",frame:"720004",sash:"721005",mull:"722006",fW:70,fFl:54,sOff:38,sW:75,sFl:56,mW:94,mFl:31.5,rf:"465001/465002/465011",rs:"465001/465006/465026",rm:"VS3020",rst:"465013/415136",beadNote:"vis. 24 mm štok / 19 mm krilo – art. po tabeli",stulps:["726004"]},
+ pro3:{label:"proEvolution AD – štok 720003 (70), krilo 721005/721001 (75), T-prečka 722005 (94)",short:"proEvolution AD 70",frame:"720003",sash:"721005",mull:"722005",fW:70,fFl:51,sOff:38,sW:75,sFl:56,mW:94,mFl:31.5,rf:"465001/465002/465011",rs:"465001/465006/465026",rm:"VS3020",rst:"465013/415136",beadNote:"vis. 24 mm štok / 19 mm krilo – art. po tabeli",stulps:["726003"]},
+ pro23:{label:"proEvolution AD 85 – štok 720023 (85), krilo 721005/721001 (75), T-prečka 722005 (94)",short:"proEvolution AD 85",frame:"720023",sash:"721005",mull:"722005",fW:85,fFl:66,sOff:53,sW:75,sFl:56,mW:94,mFl:31.5,rf:"425002",rs:"465001/465006/465026",rm:"VS3020",rst:"465013/415136",beadNote:"vis. 24 mm štok / 19 mm krilo – art. po tabeli",stulps:["726003"]},
+ blu82:{label:"bluEvolution 82 MD – štok HO9020 (73), krilo HO8520 (85), T-prečka HO9320 (96), štulp HO9810",short:"bluEvolution 82",frame:"HO9020",sash:"HO8520",mull:"HO9320",fW:73,fFl:51,sOff:38,sW:85,sFl:58,mW:96,mFl:26,rf:"VS8020/VS8420",rs:"VS8020/VS8050/VS8055/VS8520/VS8620",rm:"VS8020/VS8320",rst:"VS9810",beadNote:"vis. 27 mm – art. po tabeli",stulps:["HO9810"]}
+};
+let PU={};
+const eff=k=>Object.assign({},DEF,PRESETS[k]||PRESETS.green,PU[k]||{});
 const COL=["#2e7d9a","#6a5acd","#c0762b","#3a8f5c","#a64b6b","#5d6d7e"];
 const KEY="prozori-secenje-v2";
 
-const newWin=(n,o)=>Object.assign({name:"Prozor "+n,kom:1,W:1400,H:1300,vid:"twoS",first:"L",fill:"glass",gl:24,st:"766002",vp:"",hp:"",cells:null},o||{});
+const newWin=(n,o)=>Object.assign({name:"Prozor "+n,sys:"green",kom:1,W:1400,H:1300,vid:"twoS",first:"L",fill:"glass",gl:24,st:"766002",vp:"",hp:"",cells:null},o||{});
 let wins=[newWin(1)],cur=0,sig="",lastR=null;
-try{const sv=JSON.parse(localStorage.getItem(KEY)||"null");if(sv&&sv.wins&&sv.wins.length){wins=sv.wins;cur=Math.min(sv.cur||0,wins.length-1);Object.assign(P,sv.P||{})}}catch(e){}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({wins,cur,P}))}catch(e){}}
+try{const sv=JSON.parse(localStorage.getItem(KEY)||"null");if(sv&&sv.wins&&sv.wins.length){wins=sv.wins;cur=Math.min(sv.cur||0,wins.length-1);Object.assign(G,sv.G||{});PU=sv.PU||{};if(sv.unit!=="cm")wins.forEach(w=>{["vp","hp"].forEach(k=>{w[k]=String(w[k]||"").split(/[,;\s]+/).filter(Boolean).map(x=>f1(+x)).join("; ")})})}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({wins,cur,G,PU,unit:"cm"}))}catch(e){}}
 
 $("gl").innerHTML=Object.entries(GL).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join("");
-$("params").innerHTML=PARAMS.map(([k,l])=>`<div><label>${l}</label><input data-p="${k}" type="number" step="0.5" value="${P[k]}"></div>`).join("");
+wins.forEach(w=>{w.sys=PRESETS[w.sys]?w.sys:"green";if(!PRESETS[w.sys].stulps.includes(w.st))w.st=PRESETS[w.sys].stulps[0]});
+function renderParams(){const E=eff(wins[cur].sys);$("params").innerHTML=PARAMS.map(([k,l])=>`<div><label>${l}</label><input data-p="${k}" type="number" step="0.05" value="${+((k in G?G[k]:E[k])/10).toFixed(3)}"></div>`).join("")}
+function fillSt(){const w=wins[cur];$("st").innerHTML=PRESETS[w.sys].stulps.map(k=>`<option value="${k}">${k} (vidno ${f1(ST[k].vis)} cm)</option>`).join("")}
 
-function parsePos(s,L){return [...new Set(String(s||"").split(/[,;\s]+/).map(Number).filter(n=>n>0&&n<L))].sort((a,b)=>a-b)}
+function parsePos(s,L){return [...new Set(String(s||"").replace(/,/g,".").split(/[;\s/]+/).filter(Boolean).map(x=>Math.round(parseFloat(x)*10)).filter(n=>n>0&&n<L))].sort((a,b)=>a-b)}
 const mkCell=(w,t)=>({t:t||"fix",fill:w.fill,vb:0,hb:0,act:w.first});
 function ensureCells(w,nR,nC){
   const old=w.cells||[];
@@ -135,10 +148,10 @@ function ensureCells(w,nR,nC){
 function preset(w){
   const v=w.vid,W=+w.W||1000;
   if(v==="fix"||v==="one"||v==="twoS")w.vp="";
-  if(v==="two"||v==="slide")w.vp=String(Math.round(W/2));
-  if(v==="three")w.vp=Math.round(W/3)+", "+Math.round(2*W/3);
-  if(v==="threeS")w.vp=String(Math.round(W/3));
-  if(v==="threeS2")w.vp=String(Math.round(2*W/3));
+  if(v==="two"||v==="slide")w.vp=f1(Math.round(W/2));
+  if(v==="three")w.vp=f1(Math.round(W/3))+"; "+f1(Math.round(2*W/3));
+  if(v==="threeS")w.vp=f1(Math.round(W/3));
+  if(v==="threeS2")w.vp=f1(Math.round(2*W/3));
   const nC=parsePos(w.vp,W).length+1,nR=parsePos(w.hp,+w.H||1000).length+1;
   w.cells=[];
   for(let r=0;r<nR;r++){w.cells[r]=[];for(let c=0;c<nC;c++){
@@ -160,7 +173,7 @@ function stateOf(w){
 
 // ---------- calculation ----------
 function calc(w,no){
-  const s=stateOf(w),{W,H,vs,hs}=s,nC=vs.length+1,nR=hs.length+1,o=P.fW-P.sOff,K=Math.max(1,+w.kom||1),STP=ST[w.st];
+  const P=eff(w.sys),PR=PRESETS[w.sys],ar=a=>a?` (${a})`:"",s=stateOf(w),{W,H,vs,hs}=s,nC=vs.length+1,nR=hs.length+1,o=P.fW-P.sOff,K=Math.max(1,+w.kom||1),STP=ST[w.st];
   const bnd=(L,ps,i,n)=>{const f=i===0,l=i===n-1;return{S0:f?P.fW:ps[i-1]+P.mW/2,S1:l?L-P.fW:ps[i]-P.mW/2,F0:f?P.fFl:ps[i-1]+P.mFl,F1:l?L-P.fFl:ps[i]-P.mFl}};
   const cols=[...Array(nC)].map((_,i)=>bnd(W,vs,i,nC)),rows=[...Array(nR)].map((_,i)=>bnd(H,hs,i,nR));
   const panes=[],stulps=[],bad=[];let idx=0;
@@ -173,7 +186,7 @@ function calc(w,no){
       A.vx=A.ox+P.sW;A.vw=(xc-STP.vis/2)-A.vx;
       const B=Object.assign({},base,{idx:++idx,t:"ttr",ox:xc-STP.d/2,role:ce.act==="L"?"pom.":"akt."});
       B.vx=xc+STP.vis/2;B.vw=(C.S1+o-P.sW)-B.vx;
-      stulps.push({xc,oy,fh,len:fh-92,vis:STP.vis,act:ce.act,A,B});
+      stulps.push({xc,oy,fh,len:fh-(STP.h||92),vis:STP.vis,act:ce.act,A,B});
       panes.push(A,B);
       if(gw<=50||gh<=50||C.S1-C.S0<250||R.S1-R.S0<60)bad.push(A.idx);
       continue;
@@ -190,37 +203,37 @@ function calc(w,no){
   const add=(g,name,len,qty,ang,note,pkey)=>{let S=sec.find(x=>x.t===g);if(!S){S={t:g,rows:[]};sec.push(S)}
     S.rows.push([name,len,qty,ang,note||""]);if(pkey)for(let i=0;i<qty*K;i++)pk[pkey].push([len,no])};
   const wd=P.weld,SE=P.stEnd,SM=P.stEndM;
-  add("ŠTOK (760008)","Štok – gore/dole",W+wd,2,"45°/45°","",'stok');
-  add("ŠTOK (760008)","Štok – levo/desno",H+wd,2,"45°/45°","",'stok');
-  add("OJAČANJA ŠTOKA","Ojačanje – gore/dole",W-2*SE,2,"90°","","oj");
-  add("OJAČANJA ŠTOKA","Ojačanje – levo/desno",H-2*SE,2,"90°","","oj");
+  add("ŠTOK ("+PR.frame+")","Štok – gore/dole",W+wd,2,"45°/45°","",'stok');
+  add("ŠTOK ("+PR.frame+")","Štok – levo/desno",H+wd,2,"45°/45°","",'stok');
+  add("OJAČANJA ŠTOKA"+ar(PR.rf),"Ojačanje – gore/dole",W-2*SE,2,"90°","","oj");
+  add("OJAČANJA ŠTOKA"+ar(PR.rf),"Ojačanje – levo/desno",H-2*SE,2,"90°","","oj");
   const sp=panes.filter(p=>p.sash);
   sp.forEach(p=>{const k=`K${p.idx}`+(p.role?` (${p.role})`:"");
-    add("KRILA (761003)",`${k} – horizontalno`,p.fw+wd,2,"45°/45°",`FAM ${f1(p.fw)}×${f1(p.fh)}`,'krilo');
-    add("KRILA (761003)",`${k} – vertikalno`,p.fh+wd,2,"45°/45°","",'krilo')});
-  sp.forEach(p=>{add("OJAČANJA KRILA",`K${p.idx} – horizontalno`,p.fw-2*SE,2,"90°","","oj");add("OJAČANJA KRILA",`K${p.idx} – vertikalno`,p.fh-2*SE,2,"90°","","oj")});
+    add("KRILA ("+PR.sash+")",`${k} – horizontalno`,p.fw+wd,2,"45°/45°",`FAM ${f1(p.fw)}×${f1(p.fh)}`,'krilo');
+    add("KRILA ("+PR.sash+")",`${k} – vertikalno`,p.fh+wd,2,"45°/45°","",'krilo')});
+  sp.forEach(p=>{add("OJAČANJA KRILA"+ar(PR.rs),`K${p.idx} – horizontalno`,p.fw-2*SE,2,"90°","","oj");add("OJAČANJA KRILA"+ar(PR.rs),`K${p.idx} – vertikalno`,p.fh-2*SE,2,"90°","","oj")});
   stulps.forEach(t=>{const pom=t.act==="L"?t.B:t.A;
-    add("ŠTULP ("+w.st+")",`Štulp na K${pom.idx} (pomoćno)`,t.len,1,"90°/90°","FAM visina − 92",'stulp');
+    add("ŠTULP ("+w.st+")",`Štulp na K${pom.idx} (pomoćno)`,t.len,1,"90°/90°","FAM visina − "+f1(STP.h||92)+" cm",'stulp');
     add("ŠTULP ("+w.st+")",`Štulpkapa (${STP.cap})`,"–",2,"","gore/dole");
-    add("ŠTULP ("+w.st+")","Ojačanje štulpa",t.len-2*SM,1,"90°","proveri artikal","oj")});
-  vs.forEach((p,i)=>add("T-PREČKE (762008)",`T vertikalna ${i+1} (osa ${f1(p)})`,H-2*P.fFl,1,"90°/90°","",'tpr'));
-  hs.forEach((q,j)=>cols.forEach((C,i)=>add("T-PREČKE (762008)",`T horizontalna ${j+1} (osa ${f1(q)}) – kolona ${i+1}`,C.F1-C.F0,1,"90°/90°","",'tpr')));
-  vs.forEach((p,i)=>add("OJAČANJA T-PREČKI (465007)",`T vertikalna ${i+1}`,H-2*P.fFl-2*SM,1,"90°","","oj"));
-  hs.forEach((q,j)=>cols.forEach((C,i)=>add("OJAČANJA T-PREČKI (465007)",`T horizontalna ${j+1} – kolona ${i+1}`,C.F1-C.F0-2*SM,1,"90°","","oj")));
+    add("ŠTULP ("+w.st+")","Ojačanje štulpa",t.len-2*SM,1,"90°",PR.rst,"oj")});
+  vs.forEach((p,i)=>add("T-PREČKE ("+PR.mull+")",`T vertikalna ${i+1} (osa ${f1(p)})`,H-2*P.fFl,1,"90°/90°","",'tpr'));
+  hs.forEach((q,j)=>cols.forEach((C,i)=>add("T-PREČKE ("+PR.mull+")",`T horizontalna ${j+1} (osa ${f1(q)}) – kolona ${i+1}`,C.F1-C.F0,1,"90°/90°","",'tpr')));
+  vs.forEach((p,i)=>add("OJAČANJA T-PREČKI ("+PR.rm+")",`T vertikalna ${i+1}`,H-2*P.fFl-2*SM,1,"90°","","oj"));
+  hs.forEach((q,j)=>cols.forEach((C,i)=>add("OJAČANJA T-PREČKI ("+PR.rm+")",`T horizontalna ${j+1} – kolona ${i+1}`,C.F1-C.F0-2*SM,1,"90°","","oj")));
   const gl=GL[w.gl];
-  panes.forEach(p=>{add("LAJSNE ("+gl[1]+")",`P${p.idx} – horizontalno`,p.gw+P.bead,2,"45°/45°","",'lajsna');add("LAJSNE ("+gl[1]+")",`P${p.idx} – vertikalno`,p.gh+P.bead,2,"45°/45°","",'lajsna')});
+  panes.forEach(p=>{add("LAJSNE ("+(PR.beadNote||gl[1])+")",`P${p.idx} – horizontalno`,p.gw+P.bead,2,"45°/45°","",'lajsna');add("LAJSNE ("+(PR.beadNote||gl[1])+")",`P${p.idx} – vertikalno`,p.gh+P.bead,2,"45°/45°","",'lajsna')});
   panes.forEach(p=>{
     if(+p.ce.vb>0)add("LAŽNE PREČKE",`P${p.idx} – vertikalne`,p.gh,+p.ce.vb,"90°","","lazna");
     if(+p.ce.hb>0)add("LAŽNE PREČKE",`P${p.idx} – horizontalne`,p.gw,+p.ce.hb,"90°","","lazna")});
   panes.forEach(p=>add("STAKLO / PANEL",`P${p.idx} – ${p.ce.fill==="panel"?"panel":"staklo"} ${gl[0].toLowerCase()}`,`${f1(p.gw)} × ${f1(p.gh)}`,1,"","Š × V"));
-  return{w,s,no,K,cols,rows,panes,stulps,sec,pk,bad,o};
+  return{w,s,no,K,cols,rows,panes,stulps,sec,pk,bad,o,P,PR};
 }
 const BN={stok:"Štok",krilo:"Krilo",tpr:"T-prečka",stulp:"Štulp",lajsna:"Lajsna",lazna:"Lažna prečka",oj:"Ojačanja (čelik)"};
 function nest(R){
   const out=[];
   Object.keys(BN).forEach(k=>{const items=[];R.forEach(r=>items.push(...r.pk[k]));if(!items.length)return;
-    const L=k==="oj"?P.barSt:P.bar,bins=[];
-    items.sort((a,b)=>b[0]-a[0]).forEach(it=>{let b=bins.find(b=>b.rem>=it[0]+P.kerf);if(!b){b={items:[],rem:L};bins.push(b)}b.items.push(it);b.rem-=it[0]+P.kerf});
+    const L=k==="oj"?G.barSt:G.bar,bins=[];
+    items.sort((a,b)=>b[0]-a[0]).forEach(it=>{let b=bins.find(b=>b.rem>=it[0]+G.kerf);if(!b){b={items:[],rem:L};bins.push(b)}b.items.push(it);b.rem-=it[0]+G.kerf});
     out.push({name:BN[k],L,bins})});
   return out;
 }
@@ -228,7 +241,7 @@ const calcAll=()=>wins.map((w,i)=>calc(w,i+1));
 
 // ---------- sketch ----------
 function scene(c){
-  const {W,H,vs,hs}=c.s,fs=Math.max(W,H)/46,lw=Math.max(W,H)/1000,ops=[];
+  const P=c.P,{W,H,vs,hs}=c.s,fs=Math.max(W,H)/46,lw=Math.max(W,H)/1000,ops=[];
   const INK="#24313d",EDGE="#8a98a5",PROF="#eef1f4",SASH="#e1e7ed",GL="#d4ebf8",PN="#dcc9a6",MU="#5b6b7a";
   const R=(x,y,w,h,fill,st,sw,dash)=>ops.push({k:"r",x,y,w,h,fill,st:st===undefined?INK:st,sw:sw||lw,dash});
   const L=(x1,y1,x2,y2,st,sw,dash)=>ops.push({k:"l",x1,y1,x2,y2,st:st||INK,sw:sw||lw,dash});
@@ -248,9 +261,9 @@ function scene(c){
     const gx=p.vx,gy=p.vy,gw=p.vw,gh=p.vh,t=p.t;
     if(p.sash){R(p.ox,p.oy,p.fw,p.fh,SASH,INK,lw*1.6);miter(p.ox,p.oy,p.fw,p.fh,gx,gy,gw,gh);R(gx,gy,gw,gh,gcol(p),INK,lw*1.2)}
     if(p.ce.fill!=="panel"&&gw>150&&gh>150){L(gx+gw*.12,gy+gh*.30,gx+gw*.30,gy+gh*.10,"#ffffff",lw*5);L(gx+gw*.18,gy+gh*.38,gx+gw*.40,gy+gh*.12,"#ffffff",lw*2.5)}
-    if(t==="ttl"||t==="tl")PL([[gx+gw,gy],[gx,gy+gh/2],[gx+gw,gy+gh]],SYM,sym);
-    if(t==="ttr"||t==="tr")PL([[gx,gy],[gx+gw,gy+gh/2],[gx,gy+gh]],SYM,sym);
-    if(t==="ttl"||t==="ttr"||t==="tilt")PL([[gx,gy],[gx+gw/2,gy+gh],[gx+gw,gy]],SYM,sym,dash);
+    if(t==="ttl"||t==="tl")PL([[gx,gy],[gx+gw,gy+gh/2],[gx,gy+gh]],SYM,sym*1.2);
+    if(t==="ttr"||t==="tr")PL([[gx+gw,gy],[gx,gy+gh/2],[gx+gw,gy+gh]],SYM,sym*1.2);
+    if(t==="ttl"||t==="ttr"||t==="tilt")PL([[gx,gy+gh],[gx+gw/2,gy],[gx+gw,gy+gh]],SYM,sym*1.2,dash);
     if(t==="slide"){const my=gy+gh/2,d=p.c%2?-1:1,a=gw*.3;L(gx+gw*.2,my,gx+gw*.8,my,SYM,sym);const hx=gx+gw*(d>0?.8:.2);FP([[hx,my],[hx-d*a*.25,my-a*.12],[hx-d*a*.25,my+a*.12]],SYM)}
     for(let i=1;i<=+p.ce.vb;i++){const x=gx+gw*i/(+p.ce.vb+1);L(x,gy,x,gy+gh,"#ffffff",lw*6);L(x,gy,x,gy+gh,INK,lw*1.2)}
     for(let i=1;i<=+p.ce.hb;i++){const y=gy+gh*i/(+p.ce.hb+1);L(gx,y,gx+gw,y,"#ffffff",lw*6);L(gx,y,gx+gw,y,INK,lw*1.2)}
@@ -263,7 +276,7 @@ function scene(c){
   // labels
   c.panes.forEach(p=>{
     const lab=[p.sash?`K${p.idx}${p.role?" "+p.role:""}  ${f1(p.fw)}×${f1(p.fh)}`:`P${p.idx} fiksno`,`${p.ce.fill==="panel"?"panel":"staklo"}  ${f1(p.gw)}×${f1(p.gh)}`];
-    const mx=Math.max(...lab.map(s=>s.length)),sz=Math.max(fs*.38,Math.min(fs*.82,p.vw*.9/(mx*.56))),cx=p.vx+p.vw/2,cy=p.vy+p.vh/2-sz*.2,bw=Math.min(p.vw*.94,mx*sz*.57+sz);
+    const mx=Math.max(...lab.map(s=>s.length)),sz=Math.max(fs*.38,Math.min(fs*.82,p.vw*.9/(mx*.56))),cx=p.vx+p.vw/2,cy=p.vy+p.vh*.84-sz*.2,bw=Math.min(p.vw*.94,mx*sz*.57+sz);
     R(cx-bw/2,cy-sz*1.05,bw,sz*2.55,"#ffffff",INK,lw*.6);
     lab.forEach((l,i)=>T(cx,cy+i*sz*1.2,l,sz,{bold:i===0}))});
   T(W/2,P.fW/2+fs*.28,`ŠTOK ${f1(W+P.weld)}`,fs*.75,{fill:MU});
@@ -277,7 +290,7 @@ function scene(c){
   dh(0,W,-88,`Š = ${f1(W)}`);dv(0,H,-88,`V = ${f1(H)}`);
   if(vs.length){const xs=[0,...vs,W];for(let i=0;i<xs.length-1;i++)dh(xs[i],xs[i+1],-42,f1(xs[i+1]-xs[i]))}
   if(hs.length){const ys=[0,...hs,H];for(let i=0;i<ys.length-1;i++)dv(ys[i],ys[i+1],-42,f1(ys[i+1]-ys[i]))}
-  T(W/2,H+fs*2.2,"Pogled iznutra · mere u mm · kote T-prečki su po osi · Salamander greenEvolution",fs*.65,{fill:MU});
+  T(W/2,H+fs*2.2,"Pogled iznutra · mere u cm · kote T-prečki su po osi · Salamander greenEvolution",fs*.65,{fill:MU});
   return{ops,vb:[-150,-135,W+200,H+185]};
 }
 function toSVG(S){
@@ -297,13 +310,13 @@ const sketch=c=>toSVG(scene(c));
 
 // ---------- screen rendering ----------
 function renderList(c){
-  let h=`<table><thead><tr><th>Element</th><th class="n">Dužina (mm)</th><th class="n">Kom.</th><th>Ugao</th><th>Napomena</th></tr></thead><tbody>`;
+  let h=`<table><thead><tr><th>Element</th><th class="n">Dužina (cm)</th><th class="n">Kom.</th><th>Ugao</th><th>Napomena</th></tr></thead><tbody>`;
   c.sec.forEach(S=>{h+=`<tr class="sec"><td colspan="5">${S.t}</td></tr>`;S.rows.forEach(r=>{h+=`<tr><td>${r[0]}</td><td class="n">${typeof r[1]==="number"?f1(r[1]):r[1]}</td><td class="n">${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`})});
   $("list").innerHTML=h+"</tbody></table>";
 }
 function renderScheme(all){
   const nb=nest(all.map(a=>a)),multi=all.length>1;
-  $("scheme").innerHTML=nb.map(b=>`<div style="margin-bottom:12px"><b>${b.name}</b> – ${b.bins.length} šip. × ${b.L} mm`+b.bins.map((bn,i)=>
+  $("scheme").innerHTML=nb.map(b=>`<div style="margin-bottom:12px"><b>${b.name}</b> – ${b.bins.length} šip. × ${f1(b.L)} cm`+b.bins.map((bn,i)=>
     `<div class="bar">`+bn.items.map((x,j)=>`<span style="width:${x[0]/b.L*100}%;background:${COL[j%COL.length]}">${f1(x[0])}</span>`).join("")+`</div><div class="note" style="margin:-6px 0 6px">Šipka ${i+1}: ${bn.items.map(x=>f1(x[0])+(multi?` (${x[1]})`:"")).join(" + ")} · otpad ${f1(bn.rem)}</div>`).join("")+`</div>`).join("")||"–";
   return nb;
 }
@@ -318,12 +331,11 @@ function renderChips(){
 }
 function loadForm(){
   const w=wins[cur];
-  $("nm").value=w.name;$("kom").value=w.kom;$("W").value=w.W;$("H").value=w.H;$("vid").value=w.vid;$("first").value=w.first;$("fill").value=w.fill;$("gl").value=w.gl;$("st").value=w.st;$("vp").value=w.vp;$("hp").value=w.hp;
+  $("nm").value=w.name;$("kom").value=w.kom;$("W").value=+(w.W/10).toFixed(2);$("H").value=+(w.H/10).toFixed(2);$("vid").value=w.vid;$("first").value=w.first;$("fill").value=w.fill;$("gl").value=w.gl;fillSt();$("sys").value=w.sys;$("st").value=w.st;renderParams();$("sub").textContent=PRESETS[w.sys].label;$("vp").value=w.vp;$("hp").value=w.hp;
 }
 function readForm(){
   const w=wins[cur];
-  w.name=$("nm").value||("Prozor "+(cur+1));w.kom=Math.max(1,+$("kom").value||1);w.W=+$("W").value;w.H=+$("H").value;w.vid=$("vid").value;w.first=$("first").value;w.fill=$("fill").value;w.gl=+$("gl").value;w.st=$("st").value;w.vp=$("vp").value;w.hp=$("hp").value;
-  document.querySelectorAll("[data-p]").forEach(i=>{const x=parseFloat(i.value);if(!isNaN(x))P[i.dataset.p]=x});
+  w.name=$("nm").value||("Prozor "+(cur+1));w.kom=Math.max(1,+$("kom").value||1);w.W=Math.round(parseFloat(String($("W").value).replace(",","."))*10)||0;w.H=Math.round(parseFloat(String($("H").value).replace(",","."))*10)||0;w.vid=$("vid").value;w.first=$("first").value;w.fill=$("fill").value;w.gl=+$("gl").value;w.sys=$("sys").value;w.st=$("st").value;w.vp=$("vp").value;w.hp=$("hp").value;
 }
 function renderCells(c){
   const w=c.w,nC=c.s.vs.length+1,ns=`${cur}-${nC}-${c.s.hs.length}-${JSON.stringify(w.cells)}`;
@@ -341,7 +353,7 @@ function renderCells(c){
 function update(){
   readForm();const w=wins[cur];
   renderChips();
-  if(!(w.W>=400&&w.H>=400)){$("msg").textContent="Unesi širinu i visinu (najmanje 400 mm).";return}
+  if(!(w.W>=400&&w.H>=400)){$("msg").textContent="Unesi širinu i visinu (najmanje 40 cm).";return}
   const all=calcAll();lastR=all;const c=all[cur];
   const bad=all.flatMap(a=>a.bad.map(i=>`${a.w.name}: P${i}`));
   $("msg").textContent=bad.length?`Upozorenje – mere nisu moguće: ${bad.join(", ")}. Pomeri T-prečke.`:"";
@@ -350,10 +362,13 @@ function update(){
 }
 
 // ---------- events ----------
-document.addEventListener("input",e=>{if(e.target.closest("#cells"))return;update()});
+document.addEventListener("input",e=>{if(e.target.closest("#cells"))return;
+  if(e.target.dataset&&e.target.dataset.p){const x=parseFloat(e.target.value)*10,k=e.target.dataset.p,sy=wins[cur].sys;if(!isNaN(x)){if(k in G)G[k]=x;else(PU[sy]=PU[sy]||{})[k]=x}}
+  update()});
 document.addEventListener("change",e=>{
   const t=e.target,w=wins[cur];
   if(t.dataset&&t.dataset.k){const ce=w.cells[+t.dataset.r][+t.dataset.c];ce[t.dataset.k]=t.type==="number"?Math.max(0,Math.min(6,+t.value||0)):t.value;sig="";update();return}
+  if(t.id==="sys"){w.sys=t.value;w.st=PRESETS[w.sys].stulps[0];loadForm();sig="";update();return}
   if(t.id==="vid"||t.id==="first"){readForm();preset(w);loadForm();sig="";update()}
   else if(t.id==="fill"){readForm();w.cells.forEach(r=>r.forEach(x=>x.fill=w.fill));sig="";update()}
   else if(t.id==="W"&&["two","three","threeS","threeS2","slide"].includes(w.vid)){readForm();preset(w);loadForm();sig="";update()}
@@ -392,13 +407,13 @@ function buildPdf(all){
   all.forEach(c=>{
     const w=c.w;page();cont=`${w.name} - nastavak`;
     tt(`${w.name} - nalog za sečenje`,M,14,15,{b:1});
-    tt(`Š ${f1(c.s.W)} × V ${f1(c.s.H)} mm · ${VIDS[w.vid]} · ${c.K} kom. · ${GL[w.gl][0]} · štulp ${w.st}`,M,20,8.5,{c:"#555"});
+    tt(`Š ${f1(c.s.W)} × V ${f1(c.s.H)} cm · ${VIDS[w.vid]} · ${c.K} kom. · ${GL[w.gl][0]} · ${c.PR.short} · štulp ${w.st}`,M,20,8.5,{c:"#555"});
     drawScene(doc,scene(c),M,24,PWm-2*M,122);y=152;
     c.sec.forEach(S=>{head(S.t);S.rows.forEach(r=>{ensure(5);tt(r[0],M+1,y,8);tt(typeof r[1]==="number"?f1(r[1]):r[1],M+102,y,8,{r:1});tt(String(r[2]),M+118,y,8,{r:1});tt(r[3],M+121,y,8);tt(r[4],M+142,y,8,{c:"#555"});y+=4.2})});
   });
   page();cont="Ukupna šema sečenja - nastavak";y=16;
-  tt("Ukupna šema sečenja – svi prozori",M,14,15,{b:1});tt(`Prozora: ${all.length} · u zagradi je broj prozora · širina reza ${P.kerf} mm`,M,20,8.5,{c:"#555"});y=28;
-  nest(all).forEach(b=>{head(`${b.name} – ${b.bins.length} šipki × ${b.L} mm`);
+  tt("Ukupna šema sečenja – svi prozori",M,14,15,{b:1});tt(`Prozora: ${all.length} · u zagradi je broj prozora · širina reza ${f1(G.kerf)} cm`,M,20,8.5,{c:"#555"});y=28;
+  nest(all).forEach(b=>{head(`${b.name} – ${b.bins.length} šipki × ${f1(b.L)} cm`);
     b.bins.forEach((bn,i)=>{
       doc.setFont("helvetica","normal");doc.setFontSize(6.5);
       const txt=tr(`Šipka ${i+1}: `+bn.items.map(x=>f1(x[0])+(all.length>1?` (${x[1]})`:"")).join(" + ")+`  |  otpad ${f1(bn.rem)}`),lines=doc.splitTextToSize(txt,PWm-2*M);
@@ -416,7 +431,7 @@ async function saveFile(name,data,mime){
   const a=document.createElement("a");a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();
 }
 function csvAll(all){
-  const q=v=>`"${String(v).replace(/"/g,'""')}"`,rows=[["Prozor","Grupa","Element","Dužina (mm)","Kom. po prozoru","Komada prozora","Ugao","Napomena"].map(q).join(";")];
+  const q=v=>`"${String(v).replace(/"/g,'""')}"`,rows=[["Prozor","Grupa","Element","Dužina (cm)","Kom. po prozoru","Komada prozora","Ugao","Napomena"].map(q).join(";")];
   all.forEach(c=>c.sec.forEach(S=>S.rows.forEach(r=>rows.push([c.w.name,S.t,r[0],typeof r[1]==="number"?f1(r[1]):r[1],r[2],c.K,r[3],r[4]].map(q).join(";")))));
   return "\ufeff"+rows.join("\r\n");
 }
