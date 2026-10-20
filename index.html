@@ -241,7 +241,7 @@ const calcAll=()=>wins.map((w,i)=>calc(w,i+1));
 
 // ---------- sketch ----------
 function scene(c){
-  const P=c.P,{W,H,vs,hs}=c.s,fs=Math.max(W,H)/34,lw=Math.max(W,H)/1000,ops=[];
+  const P=c.P,{W,H,vs,hs}=c.s,fs=Math.max(W,H)/28,lw=Math.max(W,H)/1000,ops=[];
   const INK="#24313d",EDGE="#8a98a5",PROF="#eef1f4",SASH="#e1e7ed",GL="#d4ebf8",PN="#dcc9a6",MU="#5b6b7a";
   const R=(x,y,w,h,fill,st,sw,dash)=>ops.push({k:"r",x,y,w,h,fill,st:st===undefined?INK:st,sw:sw||lw,dash});
   const L=(x1,y1,x2,y2,st,sw,dash)=>ops.push({k:"l",x1,y1,x2,y2,st:st||INK,sw:sw||lw,dash});
