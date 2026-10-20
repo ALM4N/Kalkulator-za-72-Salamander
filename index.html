@@ -247,7 +247,7 @@ function scene(c){
   const L=(x1,y1,x2,y2,st,sw,dash)=>ops.push({k:"l",x1,y1,x2,y2,st:st||INK,sw:sw||lw,dash});
   const PL=(pts,st,sw,dash)=>ops.push({k:"p",pts,st,sw,dash});
   const FP=(pts,fill)=>ops.push({k:"f",pts,fill});
-  const T=(x,y,s,size,o)=>ops.push(Object.assign({k:"t",x,y,s,size,fill:INK},o||{}));
+  const T=(x,y,s,size,o)=>ops.push(Object.assign({k:"t",x,y,s,size,fill:INK},o||{},{bold:true}));
   const gcol=p=>p.ce.fill==="panel"?PN:GL;
   const miter=(x,y,w,h,ix,iy,iw,ih)=>{[[x,y,ix,iy],[x+w,y,ix+iw,iy],[x,y+h,ix,iy+ih],[x+w,y+h,ix+iw,iy+ih]].forEach(a=>L(a[0],a[1],a[2],a[3],EDGE,lw*.9))};
   // frame
