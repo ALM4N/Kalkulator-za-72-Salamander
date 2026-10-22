@@ -3,8 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kalkulator sečenja – Salamander greenEvolution</title>
+<title>Kalkulator sečenja prozora</title>
+<meta name="theme-color" content="#1b5e9b">
+<meta name="description" content="Kalkulator sečenja PVC prozora – Salamander proEvolution i bluEvolution 82">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sečenje">
 <style>
+
 :root{--bg:#f4f6f8;--card:#fff;--tx:#14202b;--mu:#5b6b7a;--bd:#d5dde5;--ac:#1b5e9b;--acx:#fff;--in:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10171e;--card:#18222c;--tx:#e8eef3;--mu:#97a7b6;--bd:#2b3a48;--ac:#5aa9e6;--acx:#07131d;--in:#111a22;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#10171e;--card:#18222c;--tx:#e8eef3;--mu:#97a7b6;--bd:#2b3a48;--ac:#5aa9e6;--acx:#07131d;--in:#111a22;color-scheme:dark}
@@ -37,6 +43,28 @@ details summary{cursor:pointer;font-weight:600;color:var(--ac)}
 .cellbox{border:1px solid var(--bd);border-radius:8px;padding:8px}
 .cellbox b{font-size:13px}
 .note{font-size:12px;color:var(--mu);margin-top:8px}
+
+/* ===== Mobilni i dodirni prikaz (dodato za PWA/Android) ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,select,input{-webkit-tap-highlight-color:transparent}
+button{min-height:44px}
+button[hidden]{display:none}
+@media (pointer:coarse),(max-width:700px){
+  input,select{min-height:44px;font-size:16px}
+  button{padding:12px 16px}
+  .row>button{flex:1 1 auto}
+  main{padding:10px 10px calc(24px + env(safe-area-inset-bottom,0px))}
+  .grid{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))}
+  td,th{padding:8px 8px}
+  h2{font-size:17px}
+}
+@media (max-width:480px){
+  .grid{grid-template-columns:1fr 1fr}
+  .grid>div[style*="grid-column"]{grid-column:1/-1}
+  .sk svg{max-height:none}
+}
+@media print{.card button,.row{display:none}}
+
 </style>
 </head>
 <body>
@@ -47,7 +75,8 @@ details summary{cursor:pointer;font-weight:600;color:var(--ac)}
 <div class="card">
 <h2>Prozori u poslu</h2>
 <div id="chips" class="row"></div>
-<div class="row" style="margin-top:10px"><button id="add">+ Novi prozor</button><button id="dup" class="sec">Kopiraj</button><button id="del" class="sec">Obriši</button></div>
+<div class="row" style="margin-top:10px"><button id="add">+ Novi prozor</button><button id="dup" class="sec">Kopiraj</button><button id="del" class="sec">Obriši</button>
+<button id="exp" class="sec">Izvezi poslove</button><button id="imp" class="sec">Uvezi poslove</button><button id="installBtn" class="sec" hidden>Instaliraj aplikaciju</button><input id="impfile" type="file" accept=".json,application/json" hidden></div>
 </div>
 
 <div class="card">
@@ -85,7 +114,7 @@ details summary{cursor:pointer;font-weight:600;color:var(--ac)}
 <div class="card">
 <details><summary>Parametri sistema (cm) – za izabrani sistem</summary>
 <div id="params" class="grid" style="margin-top:10px"></div>
-<div class="note">Sve mere su u cm (iz kataloga preračunato iz mm: npr. štok 7, krilo 8 ili 7,5, T-prečka 9 ili 9,4). Širina krila uz štulp je RAM/2 − 3,1 cm (766002) odnosno − 4,1 cm (766004, 766006, 726003, 726004), a dužina štulpa je FAM − 9,2 cm. Za bluEvolution 82 (HO9810): širina krila uz štulp je RAM/2 − 3,3 cm, a štulp je FAM − 8,4 cm. Debljine stakla ostaju u mm. Radne pretpostavke: skraćenje ojačanja, dodatak lajsne, dužina T-prečki i oslonac stakla uz štulp – uskladi ih sa svojom proizvodnjom.</div>
+<div class="note">Sve mere su u cm (iz kataloga preračunato iz mm: npr. štok 7, krilo 8 ili 7,5, T-prečka 9 ili 9,4). Širina krila uz štulp je RAM/2 − 3,1 cm (766002) odnosno − 4,1 cm (766004, 766006, 726003, 726004), a dužina štulpa je FAM − 9,2 cm. Za bluEvolution 82 (HO9800): širina krila uz štulp je RAM/2 − 4,3 cm, a štulp je FAM − 8,4 cm. Debljine stakla ostaju u mm. Radne pretpostavke: skraćenje ojačanja, dodatak lajsne, dužina T-prečki i oslonac stakla uz štulp – uskladi ih sa svojom proizvodnjom.</div>
 </details>
 </div>
 
@@ -108,12 +137,13 @@ details summary{cursor:pointer;font-weight:600;color:var(--ac)}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
+
 const $=id=>document.getElementById(id);
 const f1=n=>{const r=Math.round(n*10)/100;return String(r).replace(".",",")};
 const TYPES={fix:"Fiksno",tl:"Okretno – šarke levo",tr:"Okretno – šarke desno",ttl:"Okretno-nagibno – šarke levo",ttr:"Okretno-nagibno – šarke desno",tilt:"Nagibno",slide:"Klizno",stulp:"Dvokrilno sa štulpom (ok.-nag.)"};
 const VIDS={fix:"Fiksni",one:"Jednokrilni",two:"Dvokrilni (T)",twoS:"Dvokrilni (štulp)",three:"Trokrilni (T,T)",threeS:"Trokrilni krilo|T|štulp",threeS2:"Trokrilni štulp|T|krilo",slide:"Klizni"};
 const GL={24:["Dvoslojno 24 mm","413313"],28:["Dvoslojno 28 mm","413311"],36:["Troslojno 36 mm","413307"],40:["Troslojno 40 mm","413305"],44:["Troslojno 44 mm","413303"]};
-const ST={"766002":{d:14,vis:51,fl:62,cap:"467009"},"766004":{d:-6,vis:70,fl:61,cap:"467016"},"766006":{d:-6,vis:70,fl:61,cap:"467022"},"726004":{d:-6,vis:70,fl:61,cap:"427014/427016"},"726003":{d:-6,vis:70,fl:61,cap:"427014"},"HO9810":{d:10,vis:60,fl:63,cap:"ZS9811",h:84}};
+const ST={"766002":{d:14,vis:51,fl:62,cap:"467009"},"766004":{d:-6,vis:70,fl:61,cap:"467016"},"766006":{d:-6,vis:70,fl:61,cap:"467022"},"726004":{d:-6,vis:70,fl:61,cap:"427014/427016"},"726003":{d:-6,vis:70,fl:61,cap:"427014"},"HO9800":{d:-10,vis:80,fl:63,cap:"ZS9801",h:84}};
 const PARAMS=[["fW","Štok – vidna širina"],["fFl","Štok – oslonac stakla i T od spoljne ivice"],["weld","Dodatak za varenje po profilu"],["sW","Krilo – širina profila"],["sOff","Krilo – spoljna ivica od ivice štoka"],["sFl","Krilo – oslonac stakla od spoljne ivice"],["mW","T-prečka – vidna širina"],["mFl","T-prečka – oslonac stakla od ose"],["bead","Lajsna – dodatak na meru stakla"],["stEnd","Ojačanje štoka/krila – skraćenje po kraju"],["stEndM","Ojačanje T-prečke/štulpa – skraćenje po kraju"],["bar","Dužina PVC šipke (svi sistemi)"],["barSt","Dužina čelične šipke (svi sistemi)"],["kerf","Širina reza (svi sistemi)"]];
 const DEF={weld:3,bead:6,stEnd:50,stEndM:10};
 const G={bar:6500,barSt:6000,kerf:4};
@@ -122,20 +152,21 @@ const PRESETS={
  pro4:{label:"proEvolution MD – štok 720004 (70), krilo 721005/721001 (75), T-prečka 722006 (94)",short:"proEvolution MD",frame:"720004",sash:"721005",mull:"722006",fW:70,fFl:54,sOff:38,sW:75,sFl:56,mW:94,mFl:31.5,rf:"465001/465002/465011",rs:"465001/465006/465026",rm:"VS3020",rst:"465013/415136",beadNote:"vis. 24 mm štok / 19 mm krilo – art. po tabeli",stulps:["726004"]},
  pro3:{label:"proEvolution AD – štok 720003 (70), krilo 721005/721001 (75), T-prečka 722005 (94)",short:"proEvolution AD 70",frame:"720003",sash:"721005",mull:"722005",fW:70,fFl:51,sOff:38,sW:75,sFl:56,mW:94,mFl:31.5,rf:"465001/465002/465011",rs:"465001/465006/465026",rm:"VS3020",rst:"465013/415136",beadNote:"vis. 24 mm štok / 19 mm krilo – art. po tabeli",stulps:["726003"]},
  pro23:{label:"proEvolution AD 85 – štok 720023 (85), krilo 721005/721001 (75), T-prečka 722005 (94)",short:"proEvolution AD 85",frame:"720023",sash:"721005",mull:"722005",fW:85,fFl:66,sOff:53,sW:75,sFl:56,mW:94,mFl:31.5,rf:"425002",rs:"465001/465006/465026",rm:"VS3020",rst:"465013/415136",beadNote:"vis. 24 mm štok / 19 mm krilo – art. po tabeli",stulps:["726003"]},
- blu82:{label:"bluEvolution 82 MD – štok HO9020 (73), krilo HO8520 (85), T-prečka HO9320 (96), štulp HO9810",short:"bluEvolution 82",frame:"HO9020",sash:"HO8520",mull:"HO9320",fW:73,fFl:51,sOff:38,sW:85,sFl:58,mW:96,mFl:26,rf:"VS8020/VS8420",rs:"VS8020/VS8050/VS8055/VS8520/VS8620",rm:"VS8020/VS8320",rst:"VS9810",beadNote:"vis. 27 mm – art. po tabeli",stulps:["HO9810"]}
+ blu82:{label:"bluEvolution 82 MD – štok HO9020 (73), krilo HO8520 (85), T-prečka HO9320 (96), štulp HO9800",short:"bluEvolution 82",frame:"HO9020",sash:"HO8520",mull:"HO9320",fW:73,fFl:51,sOff:38,sW:85,sFl:58,mW:96,mFl:26,rf:"VS8020/VS8420",rs:"VS8020/VS8050/VS8055/VS8520/VS8620",rm:"VS8020/VS8320",rst:"VS9800",beadNote:"vis. 27 mm – art. po tabeli",stulps:["HO9800"]}
 };
 let PU={};
 const eff=k=>Object.assign({},DEF,PRESETS[k]||PRESETS.green,PU[k]||{});
 const COL=["#2e7d9a","#6a5acd","#c0762b","#3a8f5c","#a64b6b","#5d6d7e"];
 const KEY="prozori-secenje-v2";
 
-const newWin=(n,o)=>Object.assign({name:"Prozor "+n,sys:"green",kom:1,W:1400,H:1300,vid:"twoS",first:"L",fill:"glass",gl:24,st:"766002",vp:"",hp:"",cells:null},o||{});
+const ENABLED=[...document.querySelectorAll("#sys option")].map(o=>o.value),DEFSYS=ENABLED[0]||"pro4";
+const newWin=(n,o)=>Object.assign({name:"Prozor "+n,sys:DEFSYS,kom:1,W:1400,H:1300,vid:"twoS",first:"L",fill:"glass",gl:24,st:PRESETS[DEFSYS].stulps[0],vp:"",hp:"",cells:null},o||{});
 let wins=[newWin(1)],cur=0,sig="",lastR=null;
 try{const sv=JSON.parse(localStorage.getItem(KEY)||"null");if(sv&&sv.wins&&sv.wins.length){wins=sv.wins;cur=Math.min(sv.cur||0,wins.length-1);Object.assign(G,sv.G||{});PU=sv.PU||{};if(sv.unit!=="cm")wins.forEach(w=>{["vp","hp"].forEach(k=>{w[k]=String(w[k]||"").split(/[,;\s]+/).filter(Boolean).map(x=>f1(+x)).join("; ")})})}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify({wins,cur,G,PU,unit:"cm"}))}catch(e){}}
 
 $("gl").innerHTML=Object.entries(GL).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join("");
-wins.forEach(w=>{w.sys=PRESETS[w.sys]?w.sys:"green";if(!PRESETS[w.sys].stulps.includes(w.st))w.st=PRESETS[w.sys].stulps[0]});
+wins.forEach(w=>{w.sys=ENABLED.includes(w.sys)?w.sys:DEFSYS;if(!PRESETS[w.sys].stulps.includes(w.st))w.st=PRESETS[w.sys].stulps[0]});
 function renderParams(){const E=eff(wins[cur].sys);$("params").innerHTML=PARAMS.map(([k,l])=>`<div><label>${l}</label><input data-p="${k}" type="number" step="0.05" value="${+((k in G?G[k]:E[k])/10).toFixed(3)}"></div>`).join("")}
 function fillSt(){const w=wins[cur];$("st").innerHTML=PRESETS[w.sys].stulps.map(k=>`<option value="${k}">${k} (vidno ${f1(ST[k].vis)} cm)</option>`).join("")}
 
@@ -398,6 +429,7 @@ function drawScene(doc,S,X,Y,Wm,Hm){
   doc.setLineDashPattern([],0);
 }
 function buildPdf(all){
+  if(!window.jspdf)throw new Error("PDF biblioteka nije učitana. Pri prvom pokretanju je potreban internet (ili pokreni: npm run vendor).");
   const {jsPDF}=window.jspdf,doc=new jsPDF({unit:"mm",format:"a4"}),M=10,PWm=210,BOT=284;
   const tt=(s,x,y,sz,o)=>{o=o||{};doc.setFont("helvetica",o.b?"bold":"normal");doc.setFontSize(sz);doc.setTextColor(o.c||"#14202b");const t=tr(s);doc.text(t,o.r?x-doc.getTextWidth(t):x,y)};
   let first=true,y=0,cont="";
@@ -426,6 +458,7 @@ function buildPdf(all){
   return doc.output("blob");
 }
 async function saveFile(name,data,mime){
+  if(window.platformSave){const done=await window.platformSave(name,data,mime);if(done)return}
   const dl=window.claude&&window.claude.use?await window.claude.use("downloads"):null;
   if(dl){await dl.save({filename:name,data});return}
   const a=document.createElement("a");a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();
@@ -444,8 +477,32 @@ async function run(btn,fn,ok){
 $("pdf").onclick=()=>run("pdf",async all=>saveFile("secenje-prozora.pdf",buildPdf(all),"application/pdf"),"PDF je spreman.");
 $("csv").onclick=()=>run("csv",async all=>saveFile("secenje-prozora.csv",csvAll(all),"text/csv"),"CSV je spreman.");
 $("svgb").onclick=()=>run("svg",async all=>saveFile(`skica-${(wins[cur].name||"prozor").replace(/[^\wčćšđžČĆŠĐŽ-]+/g,"_")}.svg`,toSVG(scene(all[cur])),"image/svg+xml"),"SVG skica je spremna.");
+// ---------- izvoz / uvoz poslova (prenos podataka izmedju uredjaja) ----------
+$("exp").onclick=async()=>{
+  const m=$("pdfmsg");
+  try{update();const d=new Date().toISOString().slice(0,10);
+    await saveFile(`poslovi-secenje-${d}.json`,new Blob([JSON.stringify({app:"prozori-secenje",version:1,unit:"cm",wins,G,PU},null,1)],{type:"application/json"}),"application/json");
+    m.textContent="Izvoz je spreman."}
+  catch(e){m.textContent="Izvoz nije uspeo: "+(e&&e.message||e)}
+};
+$("imp").onclick=()=>$("impfile").click();
+$("impfile").onchange=e=>{
+  const f=e.target.files&&e.target.files[0];if(!f)return;const m=$("pdfmsg"),r=new FileReader();
+  r.onload=()=>{try{
+    const o=JSON.parse(r.result);
+    if(!o||o.app!=="prozori-secenje"||!Array.isArray(o.wins)||!o.wins.length)throw new Error("Ovo nije fajl poslova ove aplikacije.");
+    if(!confirm("Uvoz zamenjuje sve trenutne prozore ("+wins.length+"). Nastaviti?"))return;
+    wins=o.wins;Object.assign(G,o.G||{});PU=o.PU||{};cur=0;
+    wins.forEach(w=>{w.sys=ENABLED.includes(w.sys)?w.sys:DEFSYS;if(!PRESETS[w.sys].stulps.includes(w.st))w.st=PRESETS[w.sys].stulps[0];if(!w.cells)preset(w)});
+    loadForm();sig="";update();m.textContent="Uvezeno prozora: "+wins.length}
+  catch(err){m.textContent="Uvoz nije uspeo: "+(err&&err.message||err)}
+  e.target.value=""};
+  r.readAsText(f);
+};
 if(!wins[0].cells)preset(wins[0]);
 loadForm();update();
+
 </script>
 </body>
 </html>
+
