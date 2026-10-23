@@ -354,7 +354,9 @@ function scene(c){
   if(vs.length){const xs=[0,...vs,W];for(let i=0;i<xs.length-1;i++)dh(xs[i],xs[i+1],-42,f1(xs[i+1]-xs[i]))}
   if(hs.length){const ys=[0,...hs,H];for(let i=0;i<ys.length-1;i++)dv(ys[i],ys[i+1],-42,f1(ys[i+1]-ys[i]))}
   T(W/2,H+fs*2.2,"Pogled iznutra · mere u cm · kote T-prečki su po osi · Salamander greenEvolution",fs*.65,{fill:MU});
-  return{ops,vb:[-150,-135,W+200,H+185]};
+  // okvir skice raste sa veličinom slova, da natpisi (i "Pogled iznutra…") nikad ne izlaze van skice
+  const vx=-(95+fs*1.1),vy=-(95+fs*1.3),vbot=H+fs*3;
+  return{ops,vb:[vx,vy,W+50-vx,vbot-vy]};
 }
 function toSVG(S){
   const {ops,vb}=S,esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
@@ -477,7 +479,7 @@ function buildPdf(all){
     const w=c.w;page();cont=`${w.name} - nastavak`;
     tt(`${w.name} - nalog za sečenje`,M,14,15,{b:1});
     tt(`Š ${f1(c.s.W)} × V ${f1(c.s.H)} cm · ${VIDS[w.vid]} · ${c.K} kom. · ${GL[w.gl][0]} · ${c.PR.short} · štulp ${w.st}`,M,20,8.5,{c:"#555"});
-    drawScene(doc,scene(c),M,24,PWm-2*M,122);y=152;
+    drawScene(doc,scene(c),M,24,PWm-2*M,128);y=162;
     c.sec.forEach(S=>{head(S.t);S.rows.forEach(r=>{ensure(5);tt(r[0],M+1,y,8);tt(typeof r[1]==="number"?f1(r[1]):r[1],M+102,y,8,{r:1});tt(String(r[2]),M+118,y,8,{r:1});tt(r[3],M+121,y,8);tt(r[4],M+142,y,8,{c:"#555"});y+=4.2})});
   });
   page();cont="Ukupna šema sečenja - nastavak";y=16;
