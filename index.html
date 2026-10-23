@@ -108,7 +108,7 @@ button[hidden]{display:none}
 <div class="card">
 <h2>2. Polja (po potrebi izmeni svako polje)</h2>
 <div id="cells" class="grid"></div>
-<div class="note">Tip „Dvokrilno sa štulpom“ pravi dva krila u jednom polju bez T-prečke. Štulp ide na pomoćno krilo. Lažne prečke se računaju po staklu.</div>
+<div class="note">Tip „Dvokrilno sa štulpom“ pravi dva krila u jednom polju bez T-prečke. Štulp ide na pomoćno krilo. Lažne prečke se računaju po staklu. Kada dodaš horizontalnu T-prečku, krila se stavljaju u veći deo prozora: ako je T-prečka bliže gornjoj ivici (mera manja od polovine visine), krila idu od donjeg dela do T-prečke, a gornji deo je fiksan; ako je mera veća od polovine, krila idu od T-prečke prema gornjem delu, a donji deo je fiksan. Tip svakog polja možeš ručno promeniti, ali se pri novoj izmeni horizontalne T-prečke raspored ponovo postavlja. Kod trokrilnih prozora položaj vertikalnih T-prečki se sam računa tako da sva tri krila budu iste širine; ako T-prečke pomeriš ručno, krila više neće biti ista.</div>
 </div>
 
 <div class="card">
@@ -170,19 +170,45 @@ wins.forEach(w=>{w.sys=ENABLED.includes(w.sys)?w.sys:DEFSYS;if(!PRESETS[w.sys].s
 function renderParams(){const E=eff(wins[cur].sys);$("params").innerHTML=PARAMS.map(([k,l])=>`<div><label>${l}</label><input data-p="${k}" type="number" step="0.05" value="${+((k in G?G[k]:E[k])/10).toFixed(3)}"></div>`).join("")}
 function fillSt(){const w=wins[cur];$("st").innerHTML=PRESETS[w.sys].stulps.map(k=>`<option value="${k}">${k} (vidno ${f1(ST[k].vis)} cm)</option>`).join("")}
 
-function parsePos(s,L){return [...new Set(String(s||"").replace(/,/g,".").split(/[;\s/]+/).filter(Boolean).map(x=>Math.round(parseFloat(x)*10)).filter(n=>n>0&&n<L))].sort((a,b)=>a-b)}
+function parsePos(s,L){return [...new Set(String(s||"").replace(/,/g,".").split(/[;\s/]+/).filter(Boolean).map(x=>Math.round(parseFloat(x)*100)/10).filter(n=>n>0&&n<L))].sort((a,b)=>a-b)}
 const mkCell=(w,t)=>({t:t||"fix",fill:w.fill,vb:0,hb:0,act:w.first});
 function ensureCells(w,nR,nC){
-  const old=w.cells||[];
-  w.cells=Array.from({length:nR},(_,r)=>Array.from({length:nC},(_,c)=>old[r]&&old[r][c]?old[r][c]:mkCell(w)));
+  // Ne briše postojeća polja kada T-prečke privremeno nestanu (npr. dok kucate); samo dopunjuje.
+  const old=w.cells||[],R=Math.max(nR,old.length),C=Math.max(nC,...old.map(r=>r.length),0);
+  w.cells=Array.from({length:R},(_,r)=>Array.from({length:C},(_,c)=>old[r]&&old[r][c]?old[r][c]:mkCell(w)));
+}
+// Trokrilni prozori: T-prečke se postavljaju tako da sva tri krila imaju ISTU širinu (FAM).
+// three   : krilo | T | krilo | T | krilo
+// threeS  : krilo | T | dvokrilno sa štulpom      threeS2 : dvokrilno sa štulpom | T | krilo
+function autoVp(w){
+  const v=w.vid;if(!["three","threeS","threeS2"].includes(v))return null;
+  const P=eff(w.sys),STP=ST[w.st]||ST[PRESETS[w.sys].stulps[0]],W=+w.W||1000,o=P.fW-P.sOff,r=x=>Math.round(x*10)/10;
+  if(v==="three"){const F=r((W-2*P.fW-2*P.mW+6*o)/3),p1=F+P.fW+P.mW/2-2*o,p2=p1+P.mW-2*o+F;return f1(p1)+"; "+f1(p2)}
+  const F=r((W-2*P.fW-P.mW+4*o+STP.d)/3),p=F+P.fW+P.mW/2-2*o;
+  return f1(v==="threeS"?p:W-p);
+}
+// Horizontalna T-prečka (mera od gornje ivice):
+//  - manja od polovine visine  -> gornji deo je fiksan, krila idu od donjeg dela prozora do T-prečke
+//  - veća od polovine visine   -> donji deo je fiksan, krila idu od T-prečke prema gornjem delu
+// Krila se uvek stavljaju u VEĆI deo prozora; ostali delovi postaju fiksni.
+function layoutRows(w){
+  const H=+w.H||1000,hs=parsePos(w.hp,H),nR=hs.length+1;
+  if(nR<2||!w.cells)return;
+  const nC=parsePos(w.vp,+w.W||1000).length+1,b=[0,...hs,H],h=b.slice(1).map((x,i)=>x-b[i]);
+  let big=0;h.forEach((x,i)=>{if(x>=h[big])big=i});
+  const old=w.cells,out=[];
+  for(let r=0;r<nR;r++){out[r]=[];for(let c=0;c<nC;c++){
+    let src=null;for(const row of old){if(row&&row[c]&&row[c].t!=="fix"){src=row[c];break}}
+    if(!src)src=(old[big]&&old[big][c])||mkCell(w);
+    out[r][c]=r===big?Object.assign({},src):Object.assign({},src,{t:"fix",vb:0,hb:0});
+  }}
+  w.cells=out;
 }
 function preset(w){
   const v=w.vid,W=+w.W||1000;
   if(v==="fix"||v==="one"||v==="twoS")w.vp="";
   if(v==="two"||v==="slide")w.vp=f1(Math.round(W/2));
-  if(v==="three")w.vp=f1(Math.round(W/3))+"; "+f1(Math.round(2*W/3));
-  if(v==="threeS")w.vp=f1(Math.round(W/3));
-  if(v==="threeS2")w.vp=f1(Math.round(2*W/3));
+  {const av=autoVp(w);if(av!==null)w.vp=av}
   const nC=parsePos(w.vp,W).length+1,nR=parsePos(w.hp,+w.H||1000).length+1;
   w.cells=[];
   for(let r=0;r<nR;r++){w.cells[r]=[];for(let c=0;c<nC;c++){
@@ -195,6 +221,7 @@ function preset(w){
     if(v==="slide")t="slide";
     w.cells[r][c]=mkCell(w,t);
   }}
+  layoutRows(w);
 }
 function stateOf(w){
   const vs=parsePos(w.vp,w.W),hs=parsePos(w.hp,w.H);
@@ -247,10 +274,11 @@ function calc(w,no){
     add("ŠTULP ("+w.st+")",`Štulp na K${pom.idx} (pomoćno)`,t.len,1,"90°/90°","FAM visina − "+f1(STP.h||92)+" cm",'stulp');
     add("ŠTULP ("+w.st+")",`Štulpkapa (${STP.cap})`,"–",2,"","gore/dole");
     add("ŠTULP ("+w.st+")","Ojačanje štulpa",t.len-2*SM,1,"90°",PR.rst,"oj")});
-  vs.forEach((p,i)=>add("T-PREČKE ("+PR.mull+")",`T vertikalna ${i+1} (osa ${f1(p)})`,H-2*P.fFl,1,"90°/90°","",'tpr'));
-  hs.forEach((q,j)=>cols.forEach((C,i)=>add("T-PREČKE ("+PR.mull+")",`T horizontalna ${j+1} (osa ${f1(q)}) – kolona ${i+1}`,C.F1-C.F0,1,"90°/90°","",'tpr')));
+  vs.forEach((p,i)=>add("T-PREČKE ("+PR.mull+")",`T vertikalna ${i+1} (osa ${f1(p)} od leve ivice)`,H-2*P.fFl,1,"90°/90°","oslonac: štok – štok",'tpr'));
+  const sup=i=>`oslonac: ${i===0?"štok":"T"} – ${i===nC-1?"štok":"T"}`,part=i=>nC>1?` – deo ${i+1}`:"";
+  hs.forEach((q,j)=>cols.forEach((C,i)=>add("T-PREČKE ("+PR.mull+")",`T horizontalna ${j+1} (osa ${f1(q)} od gornje ivice)${part(i)}`,C.F1-C.F0,1,"90°/90°",sup(i),'tpr')));
   vs.forEach((p,i)=>add("OJAČANJA T-PREČKI ("+PR.rm+")",`T vertikalna ${i+1}`,H-2*P.fFl-2*SM,1,"90°","","oj"));
-  hs.forEach((q,j)=>cols.forEach((C,i)=>add("OJAČANJA T-PREČKI ("+PR.rm+")",`T horizontalna ${j+1} – kolona ${i+1}`,C.F1-C.F0-2*SM,1,"90°","","oj")));
+  hs.forEach((q,j)=>cols.forEach((C,i)=>add("OJAČANJA T-PREČKI ("+PR.rm+")",`T horizontalna ${j+1}${part(i)}`,C.F1-C.F0-2*SM,1,"90°","","oj")));
   const gl=GL[w.gl];
   panes.forEach(p=>{add("LAJSNE ("+(PR.beadNote||gl[1])+")",`P${p.idx} – horizontalno`,p.gw+P.bead,2,"45°/45°","",'lajsna');add("LAJSNE ("+(PR.beadNote||gl[1])+")",`P${p.idx} – vertikalno`,p.gh+P.bead,2,"45°/45°","",'lajsna')});
   panes.forEach(p=>{
@@ -294,7 +322,7 @@ function scene(c){
     if(p.ce.fill!=="panel"&&gw>150&&gh>150){L(gx+gw*.12,gy+gh*.30,gx+gw*.30,gy+gh*.10,"#ffffff",lw*5);L(gx+gw*.18,gy+gh*.38,gx+gw*.40,gy+gh*.12,"#ffffff",lw*2.5)}
     if(t==="ttl"||t==="tl")PL([[gx,gy],[gx+gw,gy+gh/2],[gx,gy+gh]],SYM,sym*1.2);
     if(t==="ttr"||t==="tr")PL([[gx+gw,gy],[gx,gy+gh/2],[gx+gw,gy+gh]],SYM,sym*1.2);
-    if(t==="ttl"||t==="ttr"||t==="tilt")PL([[gx,gy+gh],[gx+gw/2,gy],[gx+gw,gy+gh]],SYM,sym*1.2,dash);
+    if((t==="ttl"||t==="ttr"||t==="tilt")&&p.role!=="pom.")PL([[gx,gy+gh],[gx+gw/2,gy],[gx+gw,gy+gh]],SYM,sym*1.2,dash); // pomoćno krilo se ne kipuje
     if(t==="slide"){const my=gy+gh/2,d=p.c%2?-1:1,a=gw*.3;L(gx+gw*.2,my,gx+gw*.8,my,SYM,sym);const hx=gx+gw*(d>0?.8:.2);FP([[hx,my],[hx-d*a*.25,my-a*.12],[hx-d*a*.25,my+a*.12]],SYM)}
     for(let i=1;i<=+p.ce.vb;i++){const x=gx+gw*i/(+p.ce.vb+1);L(x,gy,x,gy+gh,"#ffffff",lw*6);L(x,gy,x,gy+gh,INK,lw*1.2)}
     for(let i=1;i<=+p.ce.hb;i++){const y=gy+gh*i/(+p.ce.hb+1);L(gx,y,gx+gw,y,"#ffffff",lw*6);L(gx,y,gx+gw,y,INK,lw*1.2)}
@@ -307,13 +335,17 @@ function scene(c){
   // labels
   c.panes.forEach(p=>{
     const lab=[p.sash?`K${p.idx}${p.role?" "+p.role:""}  ${f1(p.fw)}×${f1(p.fh)}`:`P${p.idx} fiksno`,`${p.ce.fill==="panel"?"panel":"staklo"}  ${f1(p.gw)}×${f1(p.gh)}`];
-    const mx=Math.max(...lab.map(s=>s.length)),sz=Math.max(fs*.38,Math.min(fs*1.1,p.vw*.9/(mx*.56))),cx=p.vx+p.vw/2,cy=p.vy+p.vh*.84-sz*.2,bw=Math.min(p.vw*.94,mx*sz*.57+sz);
+    const mx=Math.max(...lab.map(s=>s.length)),sz=Math.max(fs*.38,Math.min(p.sash?fs*1.1:fs*.6,p.vw*.9/(mx*.56))),cx=p.vx+p.vw/2,cy=p.vy+p.vh*.84-sz*.2,bw=Math.min(p.vw*.94,mx*sz*.57+sz);
     R(cx-bw/2,cy-sz*1.05,bw,sz*2.55,"#ffffff",INK,lw*.6);
     lab.forEach((l,i)=>T(cx,cy+i*sz*1.2,l,sz,{bold:i===0}))});
   T(W/2,P.fW/2+fs*.28,`ŠTOK ${f1(W+P.weld)}`,fs*.75,{fill:MU});
   T(P.fW/2-fs*.1,H/2,`ŠTOK ${f1(H+P.weld)}`,fs*.75,{rot:-90,fill:MU});
   vs.forEach(x=>T(x+fs*.28,H/2+fs*5,`T ${f1(H-2*P.fFl)}`,fs*.7,{rot:-90,fill:MU}));
-  hs.forEach(q=>c.cols.forEach(C=>T((C.S0+C.S1)/2,q+fs*.25,`T ${f1(C.F1-C.F0)}`,fs*.7,{fill:MU})));
+  hs.forEach((q,j)=>c.cols.forEach(C=>{
+    const x0=C.F0,x1=C.F1,len=x1-x0,ah=fs*.5,txt=`T-H${j+1}  ${f1(len)}`,sz=Math.min(fs*.72,(x1-x0)*.88/(txt.length*.58)),cx=(x0+x1)/2,bw=Math.min(x1-x0-ah*3,txt.length*sz*.6+sz);
+    L(x0,q,x1,q,INK,lw*1.2);FP([[x0,q],[x0+ah,q-ah*.3],[x0+ah,q+ah*.3]],INK);FP([[x1,q],[x1-ah,q-ah*.3],[x1-ah,q+ah*.3]],INK);
+    L(x0,q-P.mW/2,x0,q+P.mW/2,INK,lw*.8);L(x1,q-P.mW/2,x1,q+P.mW/2,INK,lw*.8);
+    R(cx-bw/2,q-sz*.8,bw,sz*1.6,"#ffffff",INK,lw*.6);T(cx,q+sz*.34,txt,sz)}));
   // dimension lines with arrows
   const a=fs*.55,AR="#24313d";
   const dh=(x1,x2,y,l)=>{L(x1,y,x2,y,AR,lw);FP([[x1,y],[x1+a,y-a*.3],[x1+a,y+a*.3]],AR);FP([[x2,y],[x2-a,y-a*.3],[x2-a,y+a*.3]],AR);L(x1,y+10,x1,-8,EDGE,lw*.7);L(x2,y+10,x2,-8,EDGE,lw*.7);T((x1+x2)/2,y-fs*.3,l,fs,{bold:true})};
@@ -372,7 +404,7 @@ function renderCells(c){
   const w=c.w,nC=c.s.vs.length+1,ns=`${cur}-${nC}-${c.s.hs.length}-${JSON.stringify(w.cells)}`;
   if(ns===sig)return;sig=ns;
   let h="";
-  w.cells.forEach((row,r)=>row.forEach((ce,k)=>{
+  w.cells.slice(0,c.s.hs.length+1).forEach((row,r)=>row.slice(0,nC).forEach((ce,k)=>{
     const d=`data-r="${r}" data-c="${k}"`;
     h+=`<div class="cellbox"><b>Polje ${r*nC+k+1}</b> <span class="note">(red ${r+1}, kolona ${k+1})</span>
 <label>Tip</label><select ${d} data-k="t">${Object.entries(TYPES).map(([a,b])=>`<option value="${a}"${ce.t===a?" selected":""}>${b}</option>`).join("")}</select>`+
@@ -394,16 +426,21 @@ function update(){
 
 // ---------- events ----------
 document.addEventListener("input",e=>{if(e.target.closest("#cells"))return;
-  if(e.target.dataset&&e.target.dataset.p){const x=parseFloat(e.target.value)*10,k=e.target.dataset.p,sy=wins[cur].sys;if(!isNaN(x)){if(k in G)G[k]=x;else(PU[sy]=PU[sy]||{})[k]=x}}
+  if(e.target.id==="W"){const w=wins[cur];w.W=Math.round(parseFloat(String($("W").value).replace(",","."))*10)||0;const av=autoVp(w);if(av!==null){w.vp=av;$("vp").value=av}}
+  if(e.target.dataset&&e.target.dataset.p){const x=parseFloat(e.target.value)*10,k=e.target.dataset.p,sy=wins[cur].sys;if(!isNaN(x)){if(k in G)G[k]=x;else(PU[sy]=PU[sy]||{})[k]=x}
+    const w=wins[cur],av=autoVp(w);if(av!==null){w.vp=av;$("vp").value=av}}
   update()});
 document.addEventListener("change",e=>{
   const t=e.target,w=wins[cur];
   if(t.dataset&&t.dataset.k){const ce=w.cells[+t.dataset.r][+t.dataset.c];ce[t.dataset.k]=t.type==="number"?Math.max(0,Math.min(6,+t.value||0)):t.value;sig="";update();return}
-  if(t.id==="sys"){w.sys=t.value;w.st=PRESETS[w.sys].stulps[0];loadForm();sig="";update();return}
+  if(t.id==="sys"){w.sys=t.value;w.st=PRESETS[w.sys].stulps[0];{const av=autoVp(w);if(av!==null)w.vp=av}loadForm();sig="";update();return}
   if(t.id==="vid"||t.id==="first"){readForm();preset(w);loadForm();sig="";update()}
   else if(t.id==="fill"){readForm();w.cells.forEach(r=>r.forEach(x=>x.fill=w.fill));sig="";update()}
-  else if(t.id==="W"&&["two","three","threeS","threeS2","slide"].includes(w.vid)){readForm();preset(w);loadForm();sig="";update()}
-  else if(t.id==="vp"||t.id==="hp"){sig="";update()}
+  else if(t.id==="W"&&["two","slide"].includes(w.vid)){readForm();preset(w);loadForm();sig="";update()}
+  else if((t.id==="W"||t.id==="st")&&["three","threeS","threeS2"].includes(w.vid)){readForm();const av=autoVp(w);if(av!==null)w.vp=av;loadForm();sig="";update()}
+  else if(t.id==="hp"){readForm();layoutRows(w);sig="";update()}
+  else if(t.id==="H"&&parsePos(w.hp,+w.H||0).length){readForm();layoutRows(w);sig="";update()}
+  else if(t.id==="vp"){sig="";update()}
 });
 $("chips").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;cur=+b.dataset.i;loadForm();sig="";update()});
 $("add").onclick=()=>{const w=newWin(wins.length+1);preset(w);wins.push(w);cur=wins.length-1;loadForm();sig="";update()};
@@ -505,4 +542,3 @@ loadForm();update();
 </script>
 </body>
 </html>
-
